@@ -43,45 +43,52 @@
 
   const VAPID_KEY = 'BJvz64R0okX8JCnSDfDo2BP7w82BQAeinN4LjfRvRbXCZBO3Rm01GIKfB4-5q3MJ-K-c7zYdh09TbyX0vFpqONM';
 
-    async function start() {
+  async function start() {
       try {
-          const permission = await Notification.requestPermission();
+          console.log("Starting...");
           
-          if (permission === 'granted') {
-              // 1. Enregistri Service Worker b 'scope' bach y3rf fin ykhdm
-              // Zidna { scope: './' } bach yfhem annah f dossier dyal brawl-stars
-              const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js', { scope: './' });
-
-              // 2. Tsna Service Worker ta ykon WAJED (Ready)
-              // Hada howa l-7el dyal "No active Service Worker"
-              await navigator.serviceWorker.ready;
-
-              console.log("Service Worker wjed ✅");
-
-              // 3. Jib Token daba
-              const token = await getToken(messaging, {
-                  vapidKey: VAPID_KEY,
-                  serviceWorkerRegistration: registration
-              });
-
-              if (token) {
-                  await addDoc(collection(db, "subscribers"), {
-                      token: token,
-                      date: new Date().toISOString(),
-                      userAgent: navigator.userAgent
-                  });
-                  console.log("✅ Token tsifet l Database!");
-              }
-          } else {
-              console.log("❌ Permission denied.");
+          // 1. Talab l-idzn (Permission)
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+              alert("❌ Khass t3ti l-mowafa9a bach t-wslk notification.");
+              return;
           }
+
+          // 2. Register Service Worker (Hadi li kan fiha l-mochkil)
+          // Zidna no9ta (.) bach y9leb f dossier nfsso
+          const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+          console.log("Service Worker Registered");
+
+          // 3. Jib Token
+          const token = await getToken(messaging, {
+              vapidKey: VAPID_KEY,
+              serviceWorkerRegistration: registration
+          });
+
+          if (token) {
+              console.log("Token:", token);
+              
+              // 4. Sifet l Firestore
+              await addDoc(collection(db, "subscribers"), {
+                  token: token,
+                  date: new Date().toISOString(),
+                  userAgent: navigator.userAgent // Zidt hadi bach t3rf mn ina device
+              });
+              
+              alert("✅ Mabrouk! Rak t-sajalti b naja7.");
+          } else {
+              alert("❌ Token mal9inahch. 3awd jarab.");
+          }
+
       } catch (err) {
-          // Hna ghadi nwerik l-ghalat b dbt ila kan l-fichier mal9ahch
-          alert("🚨 Mochkil: " + err.message); 
-          console.error(err);
+          console.error("Error:", err);
+          alert("🚨 W9e3 mochkil: " + err.message);
       }
   }
 
-  start();
+  // L-bouton li kaybda l-3amaliya (ila knti baghiha b click)
+  // awla khlliha tkhdm direct:
+  start(); 
+</script>
 
 </body></html>
