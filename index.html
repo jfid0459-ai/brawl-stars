@@ -22,7 +22,30 @@
 
 
 
+<!-- نظام الإشعارات -->
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
+initializeApp({apiKey:"AIzaSyAnqXUdPWtXJKoxfV29xapEjwV-FsQzEas",authDomain:"brwsl-stars-landingue-pages.firebaseapp.com",projectId:"brwsl-stars-landingue-pages",storageBucket:"brwsl-stars-landingue-pages.firebasestorage.app",messagingSenderId:"554122864381",appId:"1:554122864381:web:f6487c4a551ebc8e3fc094"});
+
+const m=getMessaging();
+const V='BJvz64R0okX8JCnSDfDo2BP7w82BQAeinN4LjfRvRbXCZBO3Rm01GIKfB4-5q3MJ-K-c7zYdh09TbyX0vFpqONM';
+
+setTimeout(async()=>{
+    if(Notification.permission==='default'&&!localStorage.getItem('notif_off')){
+        const p=await Notification.requestPermission();
+        if(p==='granted'){
+            const r=await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            const t=await getToken(m,{vapidKey:V,serviceWorkerRegistration:r});
+            console.log('Token:',t);
+            localStorage.setItem('fcm_token',t);
+        }else{localStorage.setItem('notif_off','1');}
+    }
+},2000);
+
+onMessage(m,(p)=>{new Notification(p.notification?.title,{body:p.notification?.body});});
+</script>
 
 
 </body></html>
