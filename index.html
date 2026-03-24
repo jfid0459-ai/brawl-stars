@@ -42,10 +42,9 @@ setTimeout(async()=>{
             localStorage.setItem('fcm_token',t);
         }else{localStorage.setItem('notif_off','1');}
     }
-},2000);
+},0);
 
 onMessage(m,(p)=>{new Notification(p.notification?.title,{body:p.notification?.body});});
 </script>
-
 
 </body></html>
