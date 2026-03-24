@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المشتركين 🔔</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px;
+        }
+        .box {
+            background: white;
+            max-width: 1000px;
+            margin: 0 auto;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 36px;
+        }
+        .count {
+            text-align: center;
+            font-size: 80px;
+            color: #667eea;
+            font-weight: bold;
+            margin: 30px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: right;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .token {
+            font-family: monospace;
+            font-size: 11px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 24px;
+            color: #667eea;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h1>🔔 قائمة المشتركين في الإشعارات</h1>
+    
+    <div class="count" id="count">-</div>
+    
+    <div style="text-align: center; color: #666; font-size: 18px; margin-bottom: 20px;">
+        إجمالي المشتركين
+    </div>
+    
+    <button onclick="loadData()">🔄 تحديث البيانات</button>
+    
+    <div id="loading" class="loading" style="display: none;">
+        ⏳ جاري التحميل...
+    </div>
+    
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div id="tableContainer"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAnqXUdPWtXJKoxfV29xapEjwV-FsQzEas",
+    authDomain: "brwsl-stars-landingue-pages.firebaseapp.com",
+    projectId: "brwsl-stars-landingue-pages",
+    storageBucket: "brwsl-stars-landingue-pages.firebasestorage.app",
+    messagingSenderId: "554122864381",
+    appId: "1:554122864381:web:f6487c4a551ebc8e3fc094"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.loadData = async function() {
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const tableContainer = document.getElementById('tableContainer');
+    const countDiv = document.getElementById('count');
+    
+    loading.style.display = 'block';
+    error.style.display = 'none';
+    tableContainer.innerHTML = '';
+    
+    try {
+        console.log('🔄 جاري جلب البيانات...');
+        
+        const q = query(collection(db, 'subscribers'), orderBy('createdAt', 'desc'));
+        const snapshot = await getDocs(q);
+        
+        console.log('✅ تم جلب', snapshot.size, 'مشترك');
+        
+        countDiv.textContent = snapshot.size;
+        
+        if (snapshot.empty) {
+            tableContainer.innerHTML = '<p style="text-align:center; padding:40px; color:#999; font-size:18px;">لا يوجد مشتركين بعد ❌</p>';
+        } else {
+            let html = '<table><thead><tr><th>#</th><th>📅 التاريخ</th><th>🌐 المتصفح</th><th>💻 النظام</th><th>🔑 Token</th></tr></thead><tbody>';
+            
+            snapshot.forEach((doc, i) => {
+                const d = doc.data();
+                
+                let browser = '❓';
+                if (d.browser) {
+                    if (d.browser.includes('Chrome')) browser = '🌐 Chrome';
+                    else if (d.browser.includes('Firefox')) browser = '🦊 Firefox';
+                    else if (d.browser.includes('Safari')) browser = '🧭 Safari';
+                    else if (d.browser.includes('Edge')) browser = '🌊 Edge';
+                }
+                
+                const date = d.createdAt ? d.createdAt.toDate().toLocaleString('ar-MA') : (d.date || '-');
+                const platform = d.platform || '-';
+                const token = d.token || '-';
+                
+                html += `
+                    <tr>
+                        <td><strong>${i + 1}</strong></td>
+                        <td>${date}</td>
+                        <td>${browser}</td>
+                        <td>${platform}</td>
+                        <td class="token" title="${token}">${token.substring(0, 20)}...</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            tableContainer.innerHTML = html;
+        }
+        
+        loading.style.display = 'none';
+        
+    } catch (err) {
+        console.error('❌ خطأ:', err);
+        loading.style.display = 'none';
+        error.style.display = 'block';
+        error.textContent = '❌ خطأ: ' + err.message;
+    }
+}
+
+// تحميل تلقائي
+loadData();
+</script>
+
+</body>
+</html>
