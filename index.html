@@ -22,29 +22,97 @@
 
 
 
-<!-- نظام الإشعارات -->
+<!-- 🔥 هذا هو الكود الصحيح للحفظ في Firestore 🔥 -->
 <script type="module">
-import{initializeApp}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import{getMessaging,getToken,onMessage}from"https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+  // 1. استيراد المكتبات الضرورية
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-initializeApp({apiKey:"AIzaSyAnqXUdPWtXJKoxfV29xapEjwV-FsQzEas",authDomain:"brwsl-stars-landingue-pages.firebaseapp.com",projectId:"brwsl-stars-landingue-pages",storageBucket:"brwsl-stars-landingue-pages.firebasestorage.app",messagingSenderId:"554122864381",appId:"1:554122864381:web:f6487c4a551ebc8e3fc094"});
+  // 2. إعدادات Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyAnqXUdPWtXJKoxfV29xapEjwV-FsQzEas",
+    authDomain: "brwsl-stars-landingue-pages.firebaseapp.com",
+    projectId: "brwsl-stars-landingue-pages",
+    storageBucket: "brwsl-stars-landingue-pages.firebasestorage.app",
+    messagingSenderId: "554122864381",
+    appId: "1:554122864381:web:f6487c4a551ebc8e3fc094"
+  };
 
-const m=getMessaging();
-const V='BJvz64R0okX8JCnSDfDo2BP7w82BQAeinN4LjfRvRbXCZBO3Rm01GIKfB4-5q3MJ-K-c7zYdh09TbyX0vFpqONM';
+  // 3. تشغيل التطبيق
+  const app = initializeApp(firebaseConfig);
+  const messaging = getMessaging(app);
+  const db = getFirestore(app); // هادي مهمة بزاف!
 
-setTimeout(async()=>{
-    if(Notification.permission==='default'&&!localStorage.getItem('notif_off')){
-        const p=await Notification.requestPermission();
-        if(p==='granted'){
-            const r=await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            const t=await getToken(m,{vapidKey:V,serviceWorkerRegistration:r});
-            console.log('Token:',t);
-            localStorage.setItem('fcm_token',t);
-        }else{localStorage.setItem('notif_off','1');}
-    }
-},0);
+  // VAPID Key ديالك
+  const VAPID_KEY = 'BJvz64R0okX8JCnSDfDo2BP7w82BQAeinN4LjfRvRbXCZBO3Rm01GIKfB4-5q3MJ-K-c7zYdh09TbyX0vFpqONM';
 
-onMessage(m,(p)=>{new Notification(p.notification?.title,{body:p.notification?.body});});
+  // 4. دالة لحفظ التوكن في Firestore
+  async function saveTokenToFirestore(token) {
+      try {
+          console.log("جاري الحفظ في قاعدة البيانات...");
+          // نتأكدوا واش التوكن ديجا كاين باش ما نعودوش نسجلوه
+          const q = query(collection(db, "subscribers"), where("token", "==", token));
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+              // إلا ما كانش، سجلو
+              await addDoc(collection(db, "subscribers"), {
+                  token: token,
+                  date: new Date().toLocaleString(),
+                  ua: navigator.userAgent
+              });
+              console.log("✅ تم الحفظ بنجاح في Firestore!");
+              alert("تم الاشتراك بنجاح! ✅");
+          } else {
+              console.log("⚠️ المشترك مسجل مسبقاً.");
+          }
+      } catch (e) {
+          console.error("❌ خطأ في الحفظ: ", e);
+          alert("خطأ: " + e.message);
+      }
+  }
+
+  // 5. طلب الإذن
+  async function requestPermission() {
+      try {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+              // تسجيل Service Worker
+              const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+              
+              // جلب التوكن
+              const token = await getToken(messaging, {
+                  vapidKey: VAPID_KEY,
+                  serviceWorkerRegistration: registration
+              });
+
+              if (token) {
+                  console.log("Token:", token);
+                  // 🔥 هنا كنعيطو على دالة الحفظ
+                  await saveTokenToFirestore(token);
+              }
+          } else {
+              console.log('Permission denied');
+          }
+      } catch (err) {
+          console.log('Error:', err);
+      }
+  }
+
+  // تشغيل عند التحميل
+  requestPermission();
+
+  // استقبال الرسائل
+  onMessage(messaging, (payload) => {
+      console.log('Message received. ', payload);
+      const notificationTitle = payload.notification.title;
+      const notificationOptions = {
+          body: payload.notification.body,
+          icon: '/icon.png'
+      };
+      new Notification(notificationTitle, notificationOptions);
+  });
 </script>
 
 </body></html>
