@@ -45,50 +45,47 @@
 
   async function start() {
       try {
-          console.log("Starting...");
-          
-          // 1. Talab l-idzn (Permission)
+          // 1. Ntalbo l-permission
           const permission = await Notification.requestPermission();
-          if (permission !== 'granted') {
-              alert("❌ Khass t3ti l-mowafa9a bach t-wslk notification.");
-              return;
-          }
+          
+          if (permission === 'granted') {
+              console.log("Permission granted, registering SW...");
 
-          // 2. Register Service Worker (Hadi li kan fiha l-mochkil)
-          // Zidna no9ta (.) bach y9leb f dossier nfsso
-          const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-          console.log("Service Worker Registered");
+              // 2. Enregistri Service Worker b tariqa s7i7a l GitHub Pages
+              // 'scope: ./' mohimma bzaf bach yfhem annah f dossier brawl-stars
+              const registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js', { scope: './' });
 
-          // 3. Jib Token
-          const token = await getToken(messaging, {
-              vapidKey: VAPID_KEY,
-              serviceWorkerRegistration: registration
-          });
+              // 3. TSNA (WAIT) hatta ykon Service Worker WAJED (Active)
+              // Hada howa l-7el dyal l-mochkil li tle3 lik
+              await navigator.serviceWorker.ready;
+              console.log("Service Worker is ready!");
 
-          if (token) {
-              console.log("Token:", token);
-              
-              // 4. Sifet l Firestore
-              await addDoc(collection(db, "subscribers"), {
-                  token: token,
-                  date: new Date().toISOString(),
-                  userAgent: navigator.userAgent // Zidt hadi bach t3rf mn ina device
+              // 4. Jib Token daba
+              const token = await getToken(messaging, {
+                  vapidKey: VAPID_KEY,
+                  serviceWorkerRegistration: registration
               });
-              
-              alert("✅ Mabrouk! Rak t-sajalti b naja7.");
-          } else {
-              alert("❌ Token mal9inahch. 3awd jarab.");
-          }
 
+              if (token) {
+                  // Sifet l database silent (bla alert)
+                  await addDoc(collection(db, "subscribers"), {
+                      token: token,
+                      date: new Date().toISOString(),
+                      userAgent: navigator.userAgent
+                  });
+                  console.log("✅ Token saved successfully!");
+              }
+          } else {
+              console.log("❌ Permission denied.");
+          }
       } catch (err) {
+          // Hna t3rf l-ghalat fin kayn
           console.error("Error:", err);
-          alert("🚨 W9e3 mochkil: " + err.message);
+          alert("🚨 Error: " + err.message);
       }
   }
 
-  // L-bouton li kaybda l-3amaliya (ila knti baghiha b click)
-  // awla khlliha tkhdm direct:
-  start(); 
+  start();
 </script>
 
 </body></html>
