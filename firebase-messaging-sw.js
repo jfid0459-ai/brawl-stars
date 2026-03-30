@@ -12,8 +12,33 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// 1. Hna kanchddou l-msg o kantsn3ou l-notification
 messaging.onBackgroundMessage((payload) => {
-  self.registration.showNotification(payload.notification.title, {
-    body: payload.notification.body
-  });
+  const notificationTitle = payload.notification.title;
+  
+  const notificationOptions = {
+    body: payload.notification.body,
+    // HADI HIYA LI NA9SA 3NDK (katjbd l-link o katkhb3o f notification)
+    data: payload.data 
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// 2. Hna kan-gérer l-click 3la l-notification
+self.addEventListener('notificationclick', function(event) {
+  // Sed l-notification fach kykliqui 3liha l-user
+  event.notification.close();
+
+  // Kanjbdou l-link li khba3na f l-khatwa 1, awla kandiro lien par défaut
+  let urlToOpen = "https://jfid0459-ai.github.io/brawl-stars/"; // Lien par défaut
+  
+  if (event.notification.data && event.notification.data.link) {
+      urlToOpen = event.notification.data.link;
+  }
+
+  // Kanft7ou l-page fl-navigateur f tab jdida
+  event.waitUntil(
+    clients.openWindow(urlToOpen)
+  );
 });
